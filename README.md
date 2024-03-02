@@ -1,7 +1,6 @@
 # Harden-Windows-SSH
 
-The OpenSSH implementation in Windows 11 is vulnerable to security weaknesses, including the recently discovered [Terrapin attack](https://nvd.nist.gov/vuln/detail/CVE-2023-48795) among other security weaknesses. This repository provides PowerShell scripts to mitigate these weaknesses as much as possible.
-
+The OpenSSH implementation in Windows 11 is vulnerable to security weaknesses, including the recently discovered [Terrapin attack](https://nvd.nist.gov/vuln/detail/CVE-2023-48795) among other security weaknesses. This repository provides PowerShell scripts to mitigate these weaknesses as much as possible. The hardening measures are taken from [SSH-Audit](https://www.sshaudit.com/).
 
 ## Install latest OpenSSH version for Windows
 
@@ -27,5 +26,15 @@ irm 'https://raw.githubusercontent.com/JuliusBairaktaris/Harden-Windows-SSH/main
 3. The system-wide configuration file at %programdata%\ssh\ssh_config.
 
 
-#### Optional Overrides
+#### Optional overrides
 -  `hmac-sha2-256`: This MAC is necessary to connect to the default SSH configuration of OpenWRT, Debian, DietPi, and other similar systems.
+
+## Security Scores using [SSH-Audit](https://www.sshaudit.com/)
+Default OpenSSH v8.X Configuration: 
+<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Default_OpenSSHv8.png" alt="Default Windows SSH v8 Score">
+
+Hardened Windows v8.X Configuration:
+<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Hardened_OpenSSHv8.png" alt="Hardend Windows SSH v8 Score">
+
+## Further hardening recommendations
+To further secure Windows, check out the great [Harden-Windows-Security](https://github.com/HotCakeX/Harden-Windows-Security) module by [HotCakeX](https://github.com/HotCakeX/Harden-Windows-Security).
