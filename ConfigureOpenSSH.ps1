@@ -1,19 +1,9 @@
-param (
-    [switch]$AdminModeClient,
-    [switch]$AdminModeServer
-)
-
 function Test-IsAdmin {
     return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 }
 
-function Invoke-ElevateScriptClient {
-    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -AdminModeClient" -Verb RunAs
-    exit
-}
-
-function Invoke-ElevateScriptServer {
-    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -AdminModeServer" -Verb RunAs
+function Invoke-ElevateScript {
+    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
 
@@ -74,6 +64,8 @@ function Set-sshServerConfig {
     # Write the updated content back to the file
     $fileContent | Set-Content $Path
     Write-Host "OpenSSH server configuration has been added to $Path"
+    Read-Host "Press any key to exit..."
+    exit
 }
 
 # Define the path to the .ssh directory & the configuration file
@@ -118,18 +110,6 @@ CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sh
 PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
 "@
 
-if ($AdminModeClient) {
-    Set-sshClientConfig -Path $ConfigPath
-    Read-host "Press any key to exit..."
-    exit
-}
-
-if ($AdminModeServer) {
-    Set-sshServerConfig -Path $ConfigPathServer
-    Read-host "Press any key to exit..."
-    exit
-}
-
 if ($sshVersion -match "_8\.") {
     $UpdateOpenSSH = Read-Host "Do you wish to install the latest version of OpenSSH? (Y/N)"
     if ($UpdateOpenSSH -eq "Y" -or $UpdateOpenSSH -eq "y") {
@@ -138,38 +118,44 @@ if ($sshVersion -match "_8\.") {
     }
 }
 
-$HardenClient = Read-Host "Do you wish to harden the OpenSSH client configuration? (Y/N)"
-if ($HardenClient -eq "Y" -or $HardenClient -eq "y") {
-    $CurrentUserOnly = Read-Host "Choose an option:
-1 - Apply the hardening script to the current user only. (This will only affect your user profile.)
-2 - Apply the hardening script system-wide. (Requires administrator privileges; affects all users on this system.)
-Enter 1 or 2"
-
-    switch ($CurrentUserOnly) {
-        "1" {
+if (-not (Test-IsAdmin)) {
+    Write-Host "This script requires administrator privileges to harden the OpenSSH client configuration system-wide & the OpenSSH server configuration!"
+    $ElevateScript = Read-Host "Do you wish to run this script with elevated privileges? (Y/N)"
+    if ($ElevateScript -eq "Y" -or $ElevateScript -eq "y") {
+        Invoke-ElevateScript
+    }
+    else {
+        $HardenClientUser = Read-Host "Do you wish to harden the OpenSSH client configuration for the current user profile? (Y/N)"
+        if ($HardenClientUser -eq "Y" -or $HardenClientUser -eq "y") {
             Set-sshClientConfig -Path $ConfigPathUser
-        }
-        "2" {
-            if (-not (Test-IsAdmin)) {
-                Invoke-ElevateScriptClient
-            }
-            else {
-                Set-sshClientConfig -Path $ConfigPath
-            }
-        }
-        default {
-            Read-Host "Invalid input. Press any key to exit..."
-            exit
         }
     }
 }
 
-$HardenServer = Read-Host "Do you wish to harden the OpenSSH server configuration? (Y/N)"
-if ($HardenServer -eq "Y" -or $HardenServer -eq "y") {
-    if (-not (Test-IsAdmin)) {
-        Invoke-ElevateScriptServer
+else {
+    $HardenClient = Read-Host "Do you wish to harden the OpenSSH client configuration? (Y/N)"
+    if ($HardenClient -eq "Y" -or $HardenClient -eq "y") {
+        $CurrentUserOnly = Read-Host "Choose an option:
+1 - Apply the hardening script to the current user only. (This will only affect your user profile.)
+2 - Apply the hardening script system-wide. (Requires administrator privileges; affects all users on this system.)
+Enter 1 or 2"
+
+        switch ($CurrentUserOnly) {
+            "1" {
+                Set-sshClientConfig -Path $ConfigPathUser
+            }
+            "2" {
+                Set-sshClientConfig -Path $ConfigPath
+            }
+            default {
+                Read-Host "Invalid input. Press any key to exit..."
+                exit
+            }
+        }
     }
-    else { 
+
+    $HardenServer = Read-Host "Do you wish to harden the OpenSSH server configuration? (Y/N)"
+    if ($HardenServer -eq "Y" -or $HardenServer -eq "y") {
         Set-sshServerConfig -Path $ConfigPathServer
     }
 }
