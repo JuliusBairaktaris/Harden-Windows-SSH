@@ -31,10 +31,19 @@ irm 'https://raw.githubusercontent.com/JuliusBairaktaris/Harden-Windows-SSH/main
 
 ## Security Scores using [SSH-Audit](https://www.sshaudit.com/)
 Default OpenSSH v8.X Configuration: 
-<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Default_OpenSSHv8.png" alt="Default Windows SSH v8 Score">
+<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Default_OpenSSHv8.png" alt="Default Windows OpenSSH v8 Client Score">
 
-Hardened Windows v8.X Configuration:
-<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Hardened_OpenSSHv8.png" alt="Hardend Windows SSH v8 Score">
+Hardened OpenSSH v8.X Client Configuration:
+<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Hardened_OpenSSHv8.png" alt="Hardend Windows OpenSSH v8 Client Score">
+
+Default OpenSSH v8.X Server Configuration:
+<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Default_OpenSSHv8_Server.png" alt="Default Windows OpenSSH v8 Server Score">
+
+Hardened OpenSSH v8.X Server Configuration:
+<img src="https://github.com/JuliusBairaktaris/Harden-Windows-SSH/blob/main/Images/Hardened_OpenSSHv8_Server.png" alt="Hardend Windows OpenSSH v8 Server Score">
+
+
+
 
 ## Further hardening recommendations
 To further secure Windows, check out the great [Harden-Windows-Security](https://github.com/HotCakeX/Harden-Windows-Security) module by [HotCakeX](https://github.com/HotCakeX/Harden-Windows-Security).
