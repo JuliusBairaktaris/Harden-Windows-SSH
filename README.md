@@ -17,7 +17,7 @@ ssh -V
 ## How to harden the OpenSSH implementation
 Execute:
 ```powershell
-irm 'https://raw.githubusercontent.com/JuliusBairaktaris/Harden-Windows-SSH/ConfigureOpenSSH.ps1' | iex
+irm 'https://raw.githubusercontent.com/JuliusBairaktaris/Harden-Windows-SSH/main/ConfigureOpenSSH.ps1' | iex
 ```
 
 [In Windows, the OpenSSH Client (ssh) reads configuration data from a configuration file in the following order](https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_server_configuration): 
