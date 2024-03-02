@@ -40,7 +40,7 @@ function Set-sshClientConfig {
     if ($GLOBAL:sshVersion -match "_9\.") {
         Add-Content -Path $Path -Value $GLOBAL:sshConfigV9
     }
-    Write-Host "SSH configuration has been appended to $Path"
+    Write-Host "SSH configuration has been added to $Path"
 }
 
 function Set-sshServerConfig {
@@ -61,8 +61,14 @@ function Set-sshServerConfig {
     #Ensures configuration file exists
     Start-Service -Name sshd
     Stop-Service -Name sshd
-    Add-Content -Path $ConfigPathServer  -Value $GLOBAL:sshConfigServer
-   
+    $lineToFind = "#HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key"
+    $fileContent = Get-Content $Path
+    $lineIndex = $fileContent.IndexOf($lineToFind)
+    $newContent = $fileContent[$lineIndex] + "`r`n" + $GLOBAL:sshConfigServer
+    $fileContent[$lineIndex] = $newContent
+    # Write the updated content back to the file
+    $fileContent | Set-Content $Path
+    Write-Host "OpenSSH server configuration has been added to $Path"
 }
 
 # Define the path to the .ssh directory & the configuration file
