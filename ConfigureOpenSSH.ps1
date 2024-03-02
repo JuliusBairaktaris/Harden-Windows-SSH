@@ -114,7 +114,6 @@ if ($AdminModeServer) {
     exit
 }
 
-
 $HardenClient = Read-Host "Do you wish to harden the OpenSSH client configuration? (Y/N)"
 if ($HardenClient -eq "Y" -or $HardenClient -eq "y") {
     $CurrentUserOnly = Read-Host "Choose an option:
@@ -150,4 +149,3 @@ if ($HardenServer -eq "Y" -or $HardenServer -eq "y") {
         Set-sshServerConfig -Path $ConfigPathServer
     }
 }
-
