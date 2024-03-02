@@ -64,7 +64,12 @@ function Set-sshServerConfig {
     $lineToFind = "#HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key"
     $fileContent = Get-Content $Path
     $lineIndex = $fileContent.IndexOf($lineToFind)
-    $newContent = $fileContent[$lineIndex] + "`r`n" + $GLOBAL:sshConfigServer
+    if ($GLOBAL:sshVersion -match "_9\.") {
+        $newContent = $fileContent[$lineIndex] + "`r`n" + $GLOBAL:sshConfigServer + $GLOBAL:sshConfigV9
+    }
+    else {
+        $newContent = $fileContent[$lineIndex] + "`r`n" + $GLOBAL:sshConfigServer
+    }
     $fileContent[$lineIndex] = $newContent
     # Write the updated content back to the file
     $fileContent | Set-Content $Path
@@ -101,10 +106,15 @@ HostKey __PROGRAMDATA__/ssh/ssh_host_rsa_key
 HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key
 
 Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+
 KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+
 MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+
 HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
 CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
 PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
 "@
 
