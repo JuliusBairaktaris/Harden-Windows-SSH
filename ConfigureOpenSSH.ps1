@@ -130,10 +130,12 @@ if ($AdminModeServer) {
     exit
 }
 
-$UpdateOpenSSH = Read-Host "Do you wish to install the latest version of OpenSSH? (Y/N)"
-if ($UpdateOpenSSH -eq "Y" -or $UpdateOpenSSH -eq "y") {
-    Start-Process winget -ArgumentList "install -e --id Microsoft.OpenSSH.Beta" -Wait -NoNewWindow
-    $sshVersion = & ssh -V 2>&1
+if ($sshVersion -match "_8\.") {
+    $UpdateOpenSSH = Read-Host "Do you wish to install the latest version of OpenSSH? (Y/N)"
+    if ($UpdateOpenSSH -eq "Y" -or $UpdateOpenSSH -eq "y") {
+        Start-Process winget -ArgumentList "install -e --id Microsoft.OpenSSH.Beta" -Wait -NoNewWindow
+        $sshVersion = & ssh -V 2>&1
+    }
 }
 
 $HardenClient = Read-Host "Do you wish to harden the OpenSSH client configuration? (Y/N)"
