@@ -2,9 +2,6 @@
 
 The OpenSSH implementation in Windows 11 is vulnerable to security weaknesses, including the recently discovered [Terrapin attack](https://nvd.nist.gov/vuln/detail/CVE-2023-48795) among other security weaknesses. This repository provides PowerShell scripts to mitigate these weaknesses as much as possible. The hardening measures are taken from [SSH-Audit](https://www.sshaudit.com/).
 
-## Compliance Statement
-This module, alongside its hardening measures, adheres completely to the specifications outlined in the Technical Guideline [Technical Guideline TR-02102-4](https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TG02102/BSI-TR-02102-4.pdf?__blob=publicationFile&v=5) issued by the German Federal Office for Information Security (Bundesamt für Sicherheit in der Informationstechnik, BSI). The inclusion of NIST ciphers has been deliberately omitted due to their contentious nature.
-
 ## Install latest OpenSSH version for Windows
 
 It is strongly recommended to upgrade to the beta version of the OpenSSH implementation for Windows using winget, which patches the Terrapin vulnerability (CVE-2023-48795).
