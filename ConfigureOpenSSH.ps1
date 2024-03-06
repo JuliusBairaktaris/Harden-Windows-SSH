@@ -26,10 +26,6 @@ function Set-sshClientConfig {
         $GLOBAL:sshConfig = $GLOBAL:sshConfig -replace '(?<=MACs\s)([^\r\n]*)', '$1,hmac-sha2-256'
     }
 
-    if ($GLOBAL:sshVersion -match "_9\.5") {
-        $GLOBAL:sshConfig = $GLOBAL:sshConfig -replace '(?<=Ciphers\s)', 'chacha20-poly1305@openssh.com,'
-    }
-
     Set-Content -Path $Path -Value $GLOBAL:sshConfig
     if ($GLOBAL:sshVersion -match "_9\.") {
         Add-Content -Path $Path -Value $GLOBAL:sshConfigV9
@@ -50,10 +46,6 @@ function Set-sshServerConfig {
             Remove-Item -Path $ConfigPathServer
             Write-Host "OpenSSH server configuration file has been removed."
         }
-    }
-    
-    if ($GLOBAL:sshVersion -match "_9\.5") {
-        $GLOBAL:sshConfigServer = $GLOBAL:sshConfigServer -replace '(?<=Ciphers\s)', 'chacha20-poly1305@openssh.com,'
     }
 
     #Ensures configuration file exists
