@@ -26,6 +26,10 @@ function Set-sshClientConfig {
         $GLOBAL:sshConfig = $GLOBAL:sshConfig -replace '(?<=MACs\s)([^\r\n]*)', '$1,hmac-sha2-256'
     }
 
+    if ($GLOBAL:sshVersion -match "_9\.5") {
+        $GLOBAL:sshConfig = $GLOBAL:sshConfig -replace '(?<=Ciphers\s)', 'chacha20-poly1305@openssh.com,'
+    }
+
     Set-Content -Path $Path -Value $GLOBAL:sshConfig
     if ($GLOBAL:sshVersion -match "_9\.") {
         Add-Content -Path $Path -Value $GLOBAL:sshConfigV9
@@ -46,7 +50,11 @@ function Set-sshServerConfig {
             Remove-Item -Path $ConfigPathServer
             Write-Host "OpenSSH server configuration file has been removed."
         }
-    } 
+    }
+    
+    if ($GLOBAL:sshVersion -match "_9\.5") {
+        $GLOBAL:sshConfigServer = $GLOBAL:sshConfigServer -replace '(?<=Ciphers\s)', 'chacha20-poly1305@openssh.com,'
+    }
 
     #Ensures configuration file exists
     Start-Service -Name sshd
@@ -79,7 +87,7 @@ $sshConfig = @"
 Host *
  KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
 
- Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+ Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
 
  MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
 
@@ -99,7 +107,7 @@ HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key
 
 KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
 
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
 
 MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
 
