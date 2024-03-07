@@ -49,23 +49,21 @@ function Set-SSHServerConfig {
         }
     }
 
-    Start-Service -Name sshd
-    Stop-Service -Name sshd
+    Restart-Service -Name sshd -Force
 
     $lineToFind = "#HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key"
     $fileContent = Get-Content -Path $Path
     $lineIndex = $fileContent.IndexOf($lineToFind)
 
-    if ($script:sshVersion -match "_9\.") {
-        $newContent = $fileContent[$lineIndex] + "`r`n" + $script:sshConfigServer + $script:sshConfigV9
+    if ($lineIndex -ge 0) {
+        $newContent = $fileContent[$lineIndex] + "`r`n" + $script:sshConfigServer
+        $fileContent[$lineIndex] = $newContent
+        Set-Content -Path $Path -Value $fileContent
+        Write-Host "OpenSSH server configuration has been added to $Path"
     }
     else {
-        $newContent = $fileContent[$lineIndex] + "`r`n" + $script:sshConfigServer
+        Write-Warning "The specified line '$lineToFind' was not found in the file."
     }
-
-    $fileContent[$lineIndex] = $newContent
-    Set-Content -Path $Path -Value $fileContent
-    Write-Host "OpenSSH server configuration has been added to $Path"
 
     Read-Host "Press any key to exit..."
     exit
@@ -81,10 +79,15 @@ $script:sshVersion = & ssh -V 2>&1
 $script:sshConfig = @"
 Host *
  KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+
  Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+
  MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+
  HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
  CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
  PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
 "@
 
