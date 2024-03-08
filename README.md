@@ -1,5 +1,5 @@
 # Harden-Windows-SSH
-This repository provides a PowerShell script to harden the OpenSSH Server configuration on Windows, making it more secure and resistant to known vulnerabilities like the Terrapin attack (CVE-2023-48795). The hardening measures are based on recommendations from SSH-Audit.
+This repository provides a PowerShell script to harden the OpenSSH Server configuration on Windows, making it more secure and resistant to known vulnerabilities like the [Terrapin attack](https://nvd.nist.gov/vuln/detail/CVE-2023-48795) (CVE-2023-48795). The hardening measures are based on recommendations from [SSH-Audit](https://www.sshaudit.com/).
 
 ## Applied configuration
 ```
