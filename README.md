@@ -1,6 +1,5 @@
 # Harden-Windows-SSH
-
-The OpenSSH implementation in Windows 11 is vulnerable to security weaknesses, including the recently discovered [Terrapin attack](https://nvd.nist.gov/vuln/detail/CVE-2023-48795) among other security weaknesses. This repository provides PowerShell scripts to mitigate these weaknesses as much as possible. The hardening measures are taken from [SSH-Audit](https://www.sshaudit.com/).
+This repository provides a PowerShell script to harden the OpenSSH Server configuration on Windows, making it more secure and resistant to known vulnerabilities like the Terrapin attack (CVE-2023-48795). The hardening measures are based on recommendations from SSH-Audit.
 
 ## Applied configuration
 ```
