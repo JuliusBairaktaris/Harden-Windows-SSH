@@ -7,10 +7,21 @@ function Invoke-ElevateScript {
     exit
 }
 
+function Get-SSHVersion {
+    $versionString = & ssh -V 2>&1
+    if ($versionString -match '_(\d+)\.(\d+)') {
+        return [version]"$($matches[1]).$($matches[2])"
+    }
+    # Fallback for unexpected version string format
+    return [version]"0.0"
+}
+
 function Set-SSHClientConfig {
     param (
         [Parameter(Mandatory)]
-        [string]$Path
+        [string]$Path,
+        [Parameter(Mandatory)]
+        [string]$ConfigContent
     )
 
     if ($Path -eq $script:ConfigPath -and (Test-Path -Path $script:ConfigPathUser)) {
@@ -21,49 +32,24 @@ function Set-SSHClientConfig {
         }
     }
 
-    $applyOverrides = Read-Host "Do you wish to apply additional overrides to the configuration? (Y/N)"
-    if ($applyOverrides -eq "Y" -or $applyOverrides -eq "y") {
-        $script:sshConfig = $script:sshConfig -replace '(?<=MACs\s)([^\r\n]*)', '$1,hmac-sha2-256'
-    }
-
-    Set-Content -Path $Path -Value $script:sshConfig
-    if ($script:sshVersion -match "_9\.") {
-        Add-Content -Path $Path -Value $script:sshConfigV9
-    }
+    Set-Content -Path $Path -Value $ConfigContent
     Write-Host "SSH configuration has been added to $Path"
 }
 
 function Set-SSHServerConfig {
     param (
         [Parameter(Mandatory)]
-        [string]$Path
+        [string]$Path,
+        [Parameter(Mandatory)]
+        [string]$ConfigContent
     )
 
     Stop-Service -Name sshd
 
-    if (Test-Path -Path $script:ConfigPathServer) {
-        $removeSSHD = Read-Host "A configuration file for the OpenSSH server already exists. Do you wish to remove it? (Y/N)"
-        if ($removeSSHD -eq "Y" -or $removeSSHD -eq "y") {
-            Remove-Item -Path $script:ConfigPathServer -Force
-            Write-Host "OpenSSH server configuration file has been removed."
-        }
-    }
+    Add-Content -Path $Path -Value "`n$ConfigContent"
+    Write-Host "OpenSSH server configuration has been appended to $Path"
 
     Restart-Service -Name sshd -Force
-
-    $lineToFind = "#HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key"
-    $fileContent = Get-Content -Path $Path
-    $lineIndex = $fileContent.IndexOf($lineToFind)
-
-    if ($lineIndex -ge 0) {
-        $newContent = $fileContent[$lineIndex] + "`r`n" + $script:sshConfigServer
-        $fileContent[$lineIndex] = $newContent
-        Set-Content -Path $Path -Value $fileContent
-        Write-Host "OpenSSH server configuration has been added to $Path"
-    }
-    else {
-        Write-Warning "The specified line '$lineToFind' was not found in the file."
-    }
 
     Read-Host "Press any key to exit..."
     exit
@@ -73,52 +59,43 @@ function Set-SSHServerConfig {
 $script:ConfigPath = Join-Path -Path $env:PROGRAMDATA -ChildPath "ssh\ssh_config"
 $script:ConfigPathUser = Join-Path -Path $env:USERPROFILE -ChildPath ".ssh\config"
 $script:ConfigPathServer = Join-Path -Path $env:PROGRAMDATA -ChildPath "ssh\sshd_config"
-$script:sshVersion = & ssh -V 2>&1
+$script:sshVersion = Get-SSHVersion
 
-# SSH configuration
-$script:sshConfig = @"
-Host *
- KexAlgorithms curve25519-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
+# Get the directory of the script
+$scriptRoot = $PSScriptRoot
+if (-not $scriptRoot) {
+    $scriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+}
 
- Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+# Read config files
+try {
+    $sshClientConfigContent = Get-Content -Path (Join-Path -Path $scriptRoot -ChildPath "ssh_config") -Raw
+    $sshServerConfigContent = Get-Content -Path (Join-Path -Path $scriptRoot -ChildPath "sshd_config") -Raw
+}
+catch {
+    Write-Error "Could not read ssh_config and/or sshd_config. Make sure they are in the same directory as the script: $scriptRoot"
+    Read-Host "Press any key to exit..."
+    exit 1
+}
 
- MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
+# Dynamically add settings based on SSH version
+if ($script:sshVersion -ge [version]'9.0') {
+    $sshClientConfigContent = $sshClientConfigContent -replace '(?<=KexAlgorithms\s)([^\r\n]*)', 'sntrup761x25519-sha512@openssh.com,$1'
+    $sshServerConfigContent = $sshServerConfigContent -replace '(?<=KexAlgorithms\s)([^\r\n]*)', 'sntrup761x25519-sha512@openssh.com,$1'
+}
+if ($script:sshVersion -ge [version]'9.9') {
+    $sshClientConfigContent = $sshClientConfigContent -replace '(?<=KexAlgorithms\s)([^\r\n]*)', 'mlkem768x25519-sha256,$1'
+    $sshServerConfigContent = $sshServerConfigContent -replace '(?<=KexAlgorithms\s)([^\r\n]*)', 'mlkem768x25519-sha256,$1'
+}
+if ($script:sshVersion -ge [version]'10.1') {
+    $sshClientConfigContent += "`nWarnWeakCrypto no"
+}
 
- HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256
-
- CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
-
- PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
-"@
-
-$script:sshConfigV9 = @"
- HostbasedAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
-"@
-
-$script:sshConfigServer = @"
-HostKey __PROGRAMDATA__/ssh/ssh_host_rsa_key
-HostKey __PROGRAMDATA__/ssh/ssh_host_ed25519_key
-
-KexAlgorithms curve25519-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha256
-
-Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
-
-MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-128-etm@openssh.com
-
-HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256
-
-CASignatureAlgorithms sk-ssh-ed25519@openssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256
-
-HostbasedAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
-
-PubkeyAcceptedAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256-cert-v01@openssh.com,rsa-sha2-256
-"@
-
-if ($script:sshVersion -match "_8\.") {
+if ($script:sshVersion.Major -eq 8) {
     $updateOpenSSH = Read-Host "Do you wish to install the latest version of OpenSSH? (Y/N)"
     if ($updateOpenSSH -eq "Y" -or $updateOpenSSH -eq "y") {
         Start-Process winget -ArgumentList "install -e --id Microsoft.OpenSSH.Beta" -Wait -NoNewWindow
-        $script:sshVersion = & ssh -V 2>&1
+        $script:sshVersion = Get-SSHVersion
     }
 }
 
@@ -131,7 +108,7 @@ if (-not (Test-IsAdmin)) {
     else {
         $hardenClientUser = Read-Host "Do you wish to harden the OpenSSH client configuration for the current user profile? (Y/N)"
         if ($hardenClientUser -eq "Y" -or $hardenClientUser -eq "y") {
-            Set-SSHClientConfig -Path $script:ConfigPathUser
+            Set-SSHClientConfig -Path $script:ConfigPathUser -ConfigContent $sshClientConfigContent
         }
     }
 }
@@ -145,10 +122,10 @@ Enter 1 or 2"
 
         switch ($currentUserOnly) {
             "1" {
-                Set-SSHClientConfig -Path $script:ConfigPathUser
+                Set-SSHClientConfig -Path $script:ConfigPathUser -ConfigContent $sshClientConfigContent
             }
             "2" {
-                Set-SSHClientConfig -Path $script:ConfigPath
+                Set-SSHClientConfig -Path $script:ConfigPath -ConfigContent $sshClientConfigContent
             }
             default {
                 Read-Host "Invalid input. Press any key to exit..."
@@ -159,6 +136,6 @@ Enter 1 or 2"
 
     $hardenServer = Read-Host "Do you wish to harden the OpenSSH server configuration? (Y/N)"
     if ($hardenServer -eq "Y" -or $hardenServer -eq "y") {
-        Set-SSHServerConfig -Path $script:ConfigPathServer
+        Set-SSHServerConfig -Path $script:ConfigPathServer -ConfigContent $sshServerConfigContent
     }
 }
