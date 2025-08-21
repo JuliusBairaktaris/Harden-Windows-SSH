@@ -48,7 +48,7 @@ HostKeyAlgorithms sk-ssh-ed25519-cert-v01@openssh.com,ssh-ed25519-cert-v01@opens
 To take full advantage of the latest security features, it is strongly recommended to upgrade to the latest version of OpenSSH for Windows using winget.
 
 ```
-winget install -e --id Microsoft.OpenSSH.Beta
+winget install Microsoft.OpenSSH.Preview
 ```
 
 To check your current OpenSSH version, run:
